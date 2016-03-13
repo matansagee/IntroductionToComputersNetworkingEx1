@@ -113,7 +113,7 @@ void MainClient(char* channelIp,FILE *file,int channelPort)
     clientService.sin_family = AF_INET;
 	clientService.sin_addr.s_addr = inet_addr( channelIp ); //Setting the IP address to connect to
     clientService.sin_port = htons( channelPort ); //Setting the port to connect to.
-	if ( connect( m_socket, (SOCKADDR*) &clientService, sizeof(clientService) ) == SOCKET_ERROR) 
+	/*if ( connect( m_socket, (SOCKADDR*) &clientService, sizeof(clientService) ) == SOCKET_ERROR) 
 	{
 		getsockname(m_socket, (struct sockaddr *) &foo, &len);
         /*
@@ -121,10 +121,10 @@ void MainClient(char* channelIp,FILE *file,int channelPort)
 			 inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
 		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
 			 inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
-        */
+			 *//*
 		WSACleanup();
         return;
-    }
+    }*/
 	
 	while (1)
 	{
@@ -151,11 +151,11 @@ void MainClient(char* channelIp,FILE *file,int channelPort)
 		// Output the checksum
 		printf("checksum = %04X \n", check);
 
-		unsigned short crc16code = crc16(fileContents, strlen(fileContents));
-
+		uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
 		printf("crc16 = %04X \n", crc16code);
 
-		uint32_t crc32code = crc32(0xFFFFFFFF,fileContents, strlen(fileContents));
+		//uint32_t crc32code = crc32(0xFFFFFFFF,fileContents, strlen(fileContents));
+		uint32_t crc32code = crc32a((char*) fileContents);
 
 		printf("crc32 = %08X \n ", crc32code);
 
