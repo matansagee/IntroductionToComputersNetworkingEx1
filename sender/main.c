@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include<stdio.h>
+#include<stdlib.h>
 #include"SocketSendRecvTools.h"
 #include"sender.h"
 
@@ -30,6 +31,15 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	strcpy(fileName, argv[3]);
-	MainClient(channelIp, fileName, channelPort);
+	FILE* file = fopen(fileName, "rb");
+	if (file == NULL)
+	{
+		printf("ERROR - open file %s failed\n",fileName);
+		return 1;
+	}
+	//unsigned char buffer[10];
+	//fread(buffer, sizeof(buffer), 1, file); // read 10 bytes to our buffer
+
+	MainClient(channelIp, file, channelPort);
 	return 0;
 }

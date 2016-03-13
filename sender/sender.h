@@ -15,7 +15,7 @@ typedef enum { NO_ACCESS , ACCESS } AccessResult;
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
-void MainClient(string serverIp,string clientName,int serverPort);
+void MainClient(string channelIp,FILE * file,int channelPort);
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
