@@ -144,14 +144,29 @@ void MainClient(char* channelIp,FILE *file,int channelPort)
 		fread(fileContents, sizeof(char), input_file_size, file);
 		fileContents[input_file_size] = '\0';
 		fclose(file);
-		
+		//----------------------------------------------CREATE BYTE ARRAY-------------------------
+		FILE *fileptr;
+		char *buffer;
+		long filelen;
+
+		fileptr = fopen("hello.txt", "rb");  // Open the file in binary mode
+		fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+		filelen = ftell(fileptr);             // Get the current byte offset in the file
+		rewind(fileptr);                      // Jump back to the beginning of the file
+
+		buffer = (char *)malloc((filelen + 1)*sizeof(char)); // Enough memory for file + \0
+		fread(buffer, filelen, 1, fileptr); // Read in the entire file
+		fclose(fileptr); // Close the file
+		//------------------------------------------------------------------------------------------------
+
 		// Compute the 16-bit checksum
-		unsigned short check = checksum(fileContents, strlen(fileContents));
+		//**********need to add a 0x00 byte at end if # of bytes isnt even
+		unsigned short check = checksum(buffer, strlen(fileContents));
 
 		// Output the checksum
 		printf("checksum = %04X \n", check);
 
-		uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
+		uint16_t crc16code = gen_crc16(buffer, strlen(fileContents));
 		printf("crc16 = %04X \n", crc16code);
 
 		//uint32_t crc32code = crc32(0xFFFFFFFF,fileContents, strlen(fileContents));
@@ -248,7 +263,10 @@ Copy from http://www.netfor2.com/tcpsum.htm
 word16 checksum(byte *addr, word32 count)
 {
 	register word32 sum = 0;
+	//check if count is even, if not add 0x00
+	if (count % 2 != 0){
 
+	}
 	// Main summing loop
 	while (count > 1)
 	{
