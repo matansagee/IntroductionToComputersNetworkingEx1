@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "SocketSendRecvTools.h"
 #include "client.h"
+#include "CodeFunctions.h"
 
 SOCKET m_socket;
 FILE *UsernameErrorsFile;
@@ -72,11 +73,48 @@ static DWORD SendDataThread(void)
 	}
 }
 
-//********************************************************************
-// MainClient - open a socket, ask for connection ,and manage data 
-//              thransportation in from of the server by 2 threads
-//********************************************************************
-void MainClient(char* serverIp, char* clientName, int serverPort)
+void 	write_content_message_to_file(char* fileName, char* message_content)
+{
+	FILE* output_file = fopen(fileName, "w+");
+	fprintf(output_file, message_content);
+	fclose(output_file);
+}
+
+char* get_submit_string(char* received_bytes,BOOL crc32_pass, BOOL crc16_pass,BOOL internet_checksum_pass)
+{
+	char temp_string[80];
+	char send_str[256];
+	printf("sending to Sender\n");
+	strcpy(send_str, "recieved: ");
+	strcat(send_str, _itoa(received_bytes, temp_string, 10));
+	strcat(send_str, " bytes \n");
+	strcat(send_str, "CRC-32: ");
+	if (crc32_pass)	{
+		strcat(send_str, "pass; ");
+	}
+	else	{
+		strcat(send_str, "FAIL; ");
+	}
+	strcat(send_str, "CRC-16: ");
+	if (crc16_pass)	{
+		strcat(send_str, "pass; ");
+	}
+	else	{
+		strcat(send_str, "FAIL; ");
+	}
+	strcat(send_str, "Internet cksum: ");
+	if (internet_checksum_pass)	{
+		strcat(send_str, "pass");
+	}
+	else	{
+		strcat(send_str, "FAIL");
+	}
+
+	return send_str;
+
+}
+
+void MainClient(char* channelIp,char* fileName,int channelPort)
 {
 	SOCKADDR_IN clientService;
 	HANDLE hThread[2];
@@ -99,47 +137,126 @@ void MainClient(char* serverIp, char* clientName, int serverPort)
 	}
 
 	clientService.sin_family = AF_INET;
-	clientService.sin_addr.s_addr = inet_addr(serverIp); //Setting the IP address to connect to
-	clientService.sin_port = htons(serverPort); //Setting the port to connect to.
+	clientService.sin_addr.s_addr = inet_addr(channelIp); //Setting the IP address to connect to
+	clientService.sin_port = htons(channelPort); //Setting the port to connect to.
 	if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR)
 	{
 		getsockname(m_socket, (struct sockaddr *) &foo, &len);
-		/*
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-		inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-		inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
-		*/
 		WSACleanup();
 		return;
 	}
-	
-	while (1)
+
+	TransferResult_t RecvRes;
+	TransferResult_t SendRes;
+	char *acceptedStr = NULL;
+
+
+	printf("waiting for message\n");
+	RecvRes = ReceiveString(&acceptedStr, m_socket);
+	//printf("message - %s\n", acceptedStr);
+
+	char* message_content = malloc((strlen(acceptedStr) - 8 * 2) * sizeof(char));
+	if (message_content == NULL)
 	{
+		printf("Error - malloc");
+	}
+	strncpy(message_content, acceptedStr, strlen(acceptedStr) - 9);
+	message_content[strlen(acceptedStr) - 16] = '\0';
+	
+	write_content_message_to_file(fileName, message_content);
 
-		TransferResult_t RecvRes;
-		char SendStr[256];
-		TransferResult_t SendRes;
+	char* crc32code = malloc(4 * sizeof(char));
+	if (crc32code == NULL)
+	{
+		printf("Error - malloc");
+	}
+	strncpy(crc32code, acceptedStr + strlen(acceptedStr) - 16, 8);
+	crc32code[8] = '\0';
 
-		char *acceptedStr = NULL;
-		printf("waiting for message\n");
-		RecvRes = ReceiveString(&acceptedStr, m_socket);
-		printf("message - %s\n", acceptedStr);
-		printf("sending to Sender\n");
+	char* crc16code = malloc(2 * sizeof(char));
+	if (crc16code == NULL)
+	{
+		printf("Error - malloc");
+	}
+	strncpy(crc16code, acceptedStr + strlen(acceptedStr) - 8, 4);
+	crc16code[4] = '\0';
 
-		gets(SendStr); //Reading a string from the keyboard
-		SendRes = SendString(SendStr, m_socket);
-		if (SendRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			return 0x555;
-		}
-		free(acceptedStr);
+	char* internet_checksum = malloc(2 * sizeof(char));
+	if (internet_checksum == NULL)
+	{
+		printf("Error - malloc");
+	}
+	strncpy(internet_checksum, acceptedStr + strlen(acceptedStr) - 4, 4);
+	internet_checksum[4] = '\0';
+
+	//printf("content - %s\n", message_content);
+	//printf("crc32 - %s\n", crc32code);
+	//printf("crc16 - %s\n", crc16code);
+	//printf("internet checksum - %s\n", internet_checksum);
+
+	//--------------------------------------CALCULATE CODES AND COMPARE---------------------------
+	uint32_t crc32code_calc = crc32a(message_content);
+	uint16_t crc16code_calc = gen_crc16(message_content, strlen(message_content));
+	uint16_t internet_checksum_calc = checksum(message_content, strlen(message_content));
+	BOOL crc32_pass, crc16_pass, internet_checksum_pass;
+	//printf("content		- %s\n", message_content);
+	//printf("checksum	= %04X\n", internet_checksum_calc);
+	//printf("crc16		= %04X\n", crc16code_calc);
+	//printf("crc32		= %08X\n", crc32code_calc);
+	char temp[4];
+	int received_bytes = strlen(acceptedStr);
+	printf("received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char)
+		);
+	//--------------------------------------CRC32----------------------------
+	printf("CRC-32: ");
+	if (crc32code_calc != (uint32_t)strtoul(crc32code, &temp, 16))	{
+		printf("FAIL. "); 
+		crc32_pass = FALSE;
+	}	else 	{
+		printf("pass. ");
+		crc32_pass = TRUE;
+	}
+	printf("Computed 0x%04x, received 0x%s\n", crc32code_calc, crc32code);
+	//--------------------------------------CRC16------------------------------
+	printf("CRC-16: ");
+	if (crc16code_calc != (uint16_t)strtoul(crc16code, &temp, 16))	{
+		printf("FAIL. ");
+		crc16_pass = FALSE;
+	}	else	{
+		printf("pass. ");
+		crc16_pass = TRUE;
+	}
+	printf("Computed 0x%04x, received 0x%s\n", crc16code_calc, crc16code);
+	//---------------------------------INTERNET CHECKSUM------------------
+	printf("Inet-cksum: ");
+	if (internet_checksum_calc != strtoul(internet_checksum, &temp, 16))	{
+		printf("FAIL. ");
+		internet_checksum_pass = FALSE;
+	}	else	{
+		printf("pass. ");
+		internet_checksum_pass = TRUE;
+	}
+	printf("Computed 0x%04x, received 0x%s\n", internet_checksum_calc, internet_checksum);
+	//-----------------------------------------------------------------------------------
+
+	shutdown(m_socket, SD_RECEIVE);
+	
+	char* send_str = get_submit_string(received_bytes, crc32_pass, crc16_pass, internet_checksum_pass);
+	printf("%s\n", send_str);
+
+	SendRes = SendString(send_str, m_socket);
+
+	if (SendRes == TRNS_FAILED)
+	{
+		printf("Socket error while trying to write data to socket\n");
+		return 0x555;
 	}
 	
+	
+	free(acceptedStr);
+
 	closesocket(m_socket);
 	WSACleanup();
-
 	return;
 }
 

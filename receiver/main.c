@@ -30,6 +30,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	strcpy(fileName, argv[3]);
+
 	MainClient(channelIp, fileName, channelPort);
 	return 0;
 }

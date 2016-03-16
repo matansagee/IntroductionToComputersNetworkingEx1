@@ -12,12 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="client.c" />
+    <ClCompile Include="CodeFunctions.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="SocketSendRecvTools.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client.h" />
+    <ClInclude Include="CodeFunctions.h" />
     <ClInclude Include="SocketSendRecvTools.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

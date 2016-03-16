@@ -37,27 +37,27 @@ static DWORD RecvDataThread(void)
 {
 	TransferResult_t RecvRes;
 
-	while (1) 
+	while (1)
 	{
 		char *acceptedStr = NULL;
-		RecvRes = ReceiveString( &acceptedStr , m_socket );
+		RecvRes = ReceiveString(&acceptedStr, m_socket);
 
-		if ( RecvRes == TRNS_FAILED )
+		if (RecvRes == TRNS_FAILED)
 		{
 			printf("Socket error while trying to write data to socket\n");
 			return 0x555;
 		}
-		else if ( RecvRes == TRNS_DISCONNECTED )
+		else if (RecvRes == TRNS_DISCONNECTED)
 		{
 			printf("Server closed connection. Bye!\n");
 			return 0x555;
 		}
 		else
 		{
-			fprintf(UsernameLogFile,"RECEIVED:: %s\n",acceptedStr);
-			printf("%s\n",acceptedStr);
+			fprintf(UsernameLogFile, "RECEIVED:: %s\n", acceptedStr);
+			printf("%s\n", acceptedStr);
 		}
-		
+
 		free(acceptedStr);
 	}
 
@@ -69,14 +69,14 @@ static DWORD SendDataThread(void)
 {
 	char SendStr[256];
 	TransferResult_t SendRes;
-	
-	while (1) 
+
+	while (1)
 	{
 		gets(SendStr); //Reading a string from the keyboard
-		
-		SendRes = SendString( SendStr, m_socket);
-		fprintf(UsernameLogFile,"SENT:: %s\n",SendStr);
-		if ( SendRes == TRNS_FAILED ) 
+
+		SendRes = SendString(SendStr, m_socket);
+		fprintf(UsernameLogFile, "SENT:: %s\n", SendStr);
+		if (SendRes == TRNS_FAILED)
 		{
 			printf("Socket error while trying to write data to socket\n");
 			return 0x555;
@@ -88,139 +88,119 @@ static DWORD SendDataThread(void)
 // MainClient - open a socket, ask for connection ,and manage data 
 //              thransportation in from of the server by 2 threads
 //********************************************************************
-void MainClient(char* channelIp,FILE *file,int channelPort)
+void MainClient(char* channelIp, FILE *file, int channelPort)
 {
 	SOCKADDR_IN clientService;
 	HANDLE hThread[2];
 	struct sockaddr_in foo;
 	int len = sizeof(struct sockaddr);
-    // Initialize Winsock.
-    WSADATA wsaData; //Create a WSADATA object called wsaData.
-    int iResult = WSAStartup( MAKEWORD(2, 2), &wsaData );
-    if ( iResult != NO_ERROR )
-        printf("Error at WSAStartup()\n");
-	
+	// Initialize Winsock.
+	WSADATA wsaData; //Create a WSADATA object called wsaData.
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != NO_ERROR)
+		printf("Error at WSAStartup()\n");
+
 	// Create a socket.
-    m_socket = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
+	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	// Check for errors to ensure that the socket is a valid socket.
-    if ( m_socket == INVALID_SOCKET ) {
-        printf( "Error at socket(): %ld\n", WSAGetLastError() );
-        WSACleanup();
-        return;
-    }
-
-    clientService.sin_family = AF_INET;
-	clientService.sin_addr.s_addr = inet_addr( channelIp ); //Setting the IP address to connect to
-    clientService.sin_port = htons( channelPort ); //Setting the port to connect to.
-	/*if ( connect( m_socket, (SOCKADDR*) &clientService, sizeof(clientService) ) == SOCKET_ERROR) 
-	{
-		getsockname(m_socket, (struct sockaddr *) &foo, &len);
-        /*
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-			 inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-			 inet_ntoa(foo.sin_addr),serverIp,serverPort,WSAGetLastError() );
-			 *//*
+	if (m_socket == INVALID_SOCKET) {
+		printf("Error at socket(): %ld\n", WSAGetLastError());
 		WSACleanup();
-        return;
-    }*/
-	
-	while (1)
-	{
-		TransferResult_t SendRes;
-		TransferResult_t RecvRes;
-	
-		char SendStr[256];
-		char *acceptedStr = NULL;
-		long input_file_size;
-		char *fileContents;
-		unsigned char* file_content_coded;
-		printf("sending to Receiver\n");
-		fseek(file, 0, SEEK_END);
-		input_file_size = ftell(file);
-		rewind(file);
-		fileContents = malloc((input_file_size +1) * (sizeof(char)));
-		fread(fileContents, sizeof(char), input_file_size, file);
-		fileContents[input_file_size] = '\0';
-		fclose(file);
-		input_file_size = strlen(fileContents);
-		//----------------------------------------------CREATE BYTE ARRAY-------------------------
-		//FILE *fileptr;
-		//char *buffer;
-		//long filelen;
-
-		//fileptr = fopen("hello.txt", "rb");  // Open the file in binary mode
-		//fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-		//filelen = ftell(fileptr);             // Get the current byte offset in the file
-		//rewind(fileptr);                      // Jump back to the beginning of the file
-
-		//buffer = (char *)malloc((filelen + 1)*sizeof(char)); // Enough memory for file + \0
-		//fread(buffer, filelen, 1, fileptr); // Read in the entire file
-		//fclose(fileptr); // Close the file
-		////------------------------------------------------------------------------------------------------
-		printf("file content - %s\n", fileContents);
-		// Compute the 16-bit checksum
-		//**********need to add a 0x00 byte at end if # of bytes isnt even
-		uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
-
-		// Output the checksum
-		printf("checksum = %04X\n", internet_checksum);
-
-		uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
-		printf("crc16 = %04X\n", crc16code);
-
-		uint32_t crc32code = crc32a((char*) fileContents);
-
-		printf("crc32 = %08X\n", crc32code);
-
-		char* coded_file_content = malloc((strlen(fileContents) + 9) * sizeof(char));
-		if (coded_file_content == NULL)
-		{
-			printf("Error - malloc\n");
-			return 1;
-		}
-		char temp[80];
-		strcpy(coded_file_content, fileContents);
-		printf("%s\n", coded_file_content);
-		char crc32char[4];
-		char crc16char[2];
-		char internet_checksum_char[2];
-
-		_itoa(crc32code,crc32char,16);
-		_itoa(crc16code, crc16char, 16);
-		_itoa(internet_checksum, internet_checksum_char, 16);
-
-		strcat(coded_file_content, crc32char);
-		printf("%s\n", coded_file_content);
-		strcat(coded_file_content, crc16char);
-		printf("%s\n", coded_file_content);
-		strcat(coded_file_content, internet_checksum_char);
-		printf("%s\n", coded_file_content);
-		coded_file_content[strlen(coded_file_content)] = '\0';
-		printf("%s\n", coded_file_content);
-
-		SendRes = SendString(coded_file_content, m_socket);
-
-		if (SendRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			return 0x555;
-		}
-
-		printf("waiting for message\n");
-		RecvRes = ReceiveString(&acceptedStr, m_socket);
-		printf("message - %s\n", acceptedStr);
-		free(acceptedStr);
+		return;
 	}
 
+	clientService.sin_family = AF_INET;
+	clientService.sin_addr.s_addr = inet_addr(channelIp); //Setting the IP address to connect to
+	clientService.sin_port = htons(channelPort); //Setting the port to connect to.
+	if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR)
+	{
+		getsockname(m_socket, (struct sockaddr *) &foo, &len);
+		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
+			inet_ntoa(foo.sin_addr), channelIp, channelPort, WSAGetLastError());
+		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
+			inet_ntoa(foo.sin_addr), channelIp, channelPort, WSAGetLastError());
+		WSACleanup();
+		return;
+	}
+
+	TransferResult_t SendRes;
+	TransferResult_t RecvRes;
+
+	char SendStr[256];
+	char *acceptedStr = NULL;
+	long input_file_size;
+	char *fileContents;
+	unsigned char* file_content_coded;
+	printf("sending to Receiver\n");
+	fseek(file, 0, SEEK_END);
+	input_file_size = ftell(file);
+	rewind(file);
+	fileContents = malloc((input_file_size + 1) * (sizeof(char)));
+	fread(fileContents, sizeof(char), input_file_size, file);
+	fileContents[input_file_size] = '\0';
+	fclose(file);
+	input_file_size = strlen(fileContents);
+	printf("file content - %s\n", fileContents);
+	// Compute the 16-bit checksum
+	//**********need to add a 0x00 byte at end if # of bytes isnt even
+	uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
+
+	// Output the checksum
+	printf("checksum = %04X\n", internet_checksum);
+
+	uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
+	printf("crc16 = %04X\n", crc16code);
+
+	uint32_t crc32code = crc32a((char*)fileContents);
+
+	printf("crc32 = %08X\n", crc32code);
+
+	char* coded_file_content = malloc((strlen(fileContents) + 9) * sizeof(char));
+	if (coded_file_content == NULL)
+	{
+		printf("Error - malloc\n");
+		return 1;
+	}
+	char temp[80];
+	strcpy(coded_file_content, fileContents);
+	printf("%s\n", coded_file_content);
+	char crc32char[4];
+	char crc16char[2];
+	char internet_checksum_char[2];
+
+	_itoa(crc32code, crc32char, 16);
+	_itoa(crc16code, crc16char, 16);
+	_itoa(internet_checksum, internet_checksum_char, 16);
+
+	strcat(coded_file_content, crc32char);
+	printf("%s\n", coded_file_content);
+	strcat(coded_file_content, crc16char);
+	printf("%s\n", coded_file_content);
+	strcat(coded_file_content, internet_checksum_char);
+	printf("%s\n", coded_file_content);
+	coded_file_content[strlen(coded_file_content)] = '\0';
+	printf("%s\n", coded_file_content);
+
+	SendRes = SendString(coded_file_content, m_socket);
+	printf("size %d\n", strlen(coded_file_content));
+	if (SendRes == TRNS_FAILED)
+	{
+		printf("Socket error while trying to write data to socket\n");
+		return 0x555;
+	}
+
+	printf("waiting for message\n");
+	RecvRes = ReceiveString(&acceptedStr, m_socket);
+	printf("message - %s\n", acceptedStr);
+	free(acceptedStr);
 
 
 
-	
+
 	closesocket(m_socket);
 	WSACleanup();
-    
+
 	return;
 }
 char* calc_crc32(char* fileContents)
