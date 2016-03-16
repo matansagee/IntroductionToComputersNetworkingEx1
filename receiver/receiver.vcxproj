@@ -26,6 +26,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5EB6522E-B7C7-4386-B4B8-01438D49BF20}</ProjectGuid>
     <RootNamespace>receiver</RootNamespace>
+    <ProjectName>my_receiver</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

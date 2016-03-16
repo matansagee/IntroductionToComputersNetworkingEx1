@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{27D1C80C-B65A-4561-A9F7-E690C0ED9F1E}</ProjectGuid>
     <RootNamespace>channel</RootNamespace>
+    <ProjectName>my_channel</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
