@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdint.h>
-#pragma comment(lib, "IPHLPAPI.lib")
+//#pragma comment(lib, "IPHLPAPI.lib")
 
 #include "utils.h"
 #include "SocketSendRecvTools.h"
@@ -140,41 +140,67 @@ void MainClient(char* channelIp,FILE *file,int channelPort)
 		fseek(file, 0, SEEK_END);
 		input_file_size = ftell(file);
 		rewind(file);
-		fileContents = malloc(input_file_size * (sizeof(char)));
+		fileContents = malloc((input_file_size +1) * (sizeof(char)));
 		fread(fileContents, sizeof(char), input_file_size, file);
 		fileContents[input_file_size] = '\0';
 		fclose(file);
+		input_file_size = strlen(fileContents);
 		//----------------------------------------------CREATE BYTE ARRAY-------------------------
-		FILE *fileptr;
-		char *buffer;
-		long filelen;
+		//FILE *fileptr;
+		//char *buffer;
+		//long filelen;
 
-		fileptr = fopen("hello.txt", "rb");  // Open the file in binary mode
-		fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-		filelen = ftell(fileptr);             // Get the current byte offset in the file
-		rewind(fileptr);                      // Jump back to the beginning of the file
+		//fileptr = fopen("hello.txt", "rb");  // Open the file in binary mode
+		//fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+		//filelen = ftell(fileptr);             // Get the current byte offset in the file
+		//rewind(fileptr);                      // Jump back to the beginning of the file
 
-		buffer = (char *)malloc((filelen + 1)*sizeof(char)); // Enough memory for file + \0
-		fread(buffer, filelen, 1, fileptr); // Read in the entire file
-		fclose(fileptr); // Close the file
-		//------------------------------------------------------------------------------------------------
-
+		//buffer = (char *)malloc((filelen + 1)*sizeof(char)); // Enough memory for file + \0
+		//fread(buffer, filelen, 1, fileptr); // Read in the entire file
+		//fclose(fileptr); // Close the file
+		////------------------------------------------------------------------------------------------------
+		printf("file content - %s\n", fileContents);
 		// Compute the 16-bit checksum
 		//**********need to add a 0x00 byte at end if # of bytes isnt even
-		unsigned short check = checksum(buffer, strlen(fileContents));
+		uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
 
 		// Output the checksum
-		printf("checksum = %04X \n", check);
+		printf("checksum = %04X\n", internet_checksum);
 
-		uint16_t crc16code = gen_crc16(buffer, strlen(fileContents));
-		printf("crc16 = %04X \n", crc16code);
+		uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
+		printf("crc16 = %04X\n", crc16code);
 
-		//uint32_t crc32code = crc32(0xFFFFFFFF,fileContents, strlen(fileContents));
 		uint32_t crc32code = crc32a((char*) fileContents);
 
-		printf("crc32 = %08X \n ", crc32code);
+		printf("crc32 = %08X\n", crc32code);
 
-		SendRes = SendString("dsdsD", m_socket);
+		char* coded_file_content = malloc((strlen(fileContents) + 9) * sizeof(char));
+		if (coded_file_content == NULL)
+		{
+			printf("Error - malloc\n");
+			return 1;
+		}
+		char temp[80];
+		strcpy(coded_file_content, fileContents);
+		printf("%s\n", coded_file_content);
+		char crc32char[4];
+		char crc16char[2];
+		char internet_checksum_char[2];
+
+		_itoa(crc32code,crc32char,16);
+		_itoa(crc16code, crc16char, 16);
+		_itoa(internet_checksum, internet_checksum_char, 16);
+
+		strcat(coded_file_content, crc32char);
+		printf("%s\n", coded_file_content);
+		strcat(coded_file_content, crc16char);
+		printf("%s\n", coded_file_content);
+		strcat(coded_file_content, internet_checksum_char);
+		printf("%s\n", coded_file_content);
+		coded_file_content[strlen(coded_file_content)] = '\0';
+		printf("%s\n", coded_file_content);
+
+		SendRes = SendString(coded_file_content, m_socket);
 
 		if (SendRes == TRNS_FAILED)
 		{

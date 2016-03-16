@@ -27,6 +27,9 @@
     <ClCompile Include="sender.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="crc32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SocketSendRecvTools.h">
@@ -38,9 +41,12 @@
     <ClInclude Include="sender.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="crc32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="example.txt">
+    <Text Include="hello.txt">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
