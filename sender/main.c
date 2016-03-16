@@ -37,8 +37,6 @@ int main(int argc, char** argv)
 		printf("ERROR - open file %s failed\n",fileName);
 		return 1;
 	}
-	//unsigned char buffer[10];
-	//fread(buffer, sizeof(buffer), 1, file); // read 10 bytes to our buffer
 
 	MainClient(channelIp, file, channelPort);
 	return 0;

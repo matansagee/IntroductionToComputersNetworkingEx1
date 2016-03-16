@@ -1,4 +1,4 @@
-#include "CodeFunctions.h"
+#include "code_functions.h"
 //credit is due to hackersdelight.org
 // ---------------------------- reverse --------------------------------
 
@@ -92,7 +92,7 @@ uint16_t gen_crc16(const uint8_t *data, uint16_t size)
 	return crc;
 }
 
-word16 checksum(byte *addr, word32 count)
+uint16_t checksum(byte *addr, word32 count)
 {
 	register word32 sum = 0;
 	//check if count is even, if not add 0x00
@@ -102,7 +102,7 @@ word16 checksum(byte *addr, word32 count)
 	// Main summing loop
 	while (count > 1)
 	{
-		sum = sum + *((word16 *)addr)++;
+		sum = sum + *((uint16_t *)addr)++;
 		count = count - 2;
 	}
 

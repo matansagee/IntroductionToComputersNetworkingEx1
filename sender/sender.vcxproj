@@ -65,17 +65,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="crc32.c" />
+    <ClCompile Include="code_functions.c" />
     <ClCompile Include="sender.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="SocketSendRecvTools.c" />
-    <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc32.h" />
+    <ClInclude Include="code_functions.h" />
     <ClInclude Include="sender.h" />
     <ClInclude Include="SocketSendRecvTools.h" />
-    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="hello.txt" />

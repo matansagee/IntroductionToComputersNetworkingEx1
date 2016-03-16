@@ -11,10 +11,9 @@
 #include <sys/types.h>
 #pragma comment(lib, "IPHLPAPI.lib")
 
-#include "utils.h"
 #include "SocketSendRecvTools.h"
 #include "client.h"
-#include "CodeFunctions.h"
+#include "code_functions.h"
 
 SOCKET m_socket;
 FILE *UsernameErrorsFile;

@@ -12,16 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="client.c" />
-    <ClCompile Include="CodeFunctions.c" />
+    <ClCompile Include="code_functions.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="SocketSendRecvTools.c" />
-    <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client.h" />
-    <ClInclude Include="CodeFunctions.h" />
+    <ClInclude Include="code_functions.h" />
     <ClInclude Include="SocketSendRecvTools.h" />
-    <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5EB6522E-B7C7-4386-B4B8-01438D49BF20}</ProjectGuid>

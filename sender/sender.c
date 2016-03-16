@@ -12,10 +12,9 @@
 #include <stdint.h>
 //#pragma comment(lib, "IPHLPAPI.lib")
 
-#include "utils.h"
 #include "SocketSendRecvTools.h"
 #include "sender.h"
-#include "crc32.h"
+#include "code_functions.h"
 
 SOCKET m_socket;
 FILE *UsernameErrorsFile;
@@ -25,13 +24,6 @@ char* calc_crc32(char* fileContents);
 char* calc_crc16(char* fileContents);
 char* calc_internet_checksum(char* fileContents);
 
-//----- Type defines ----------------------------------------------------------
-typedef unsigned char      byte;    // Byte is a char
-typedef unsigned short int word16;  // 16-bit word is a short int
-typedef unsigned int       word32;  // 32-bit word is an int
-
-word16 checksum(byte *addr, word32 count);
-unsigned short crc16(char *data_p, unsigned short length);
 
 //Reading data coming from the server
 static DWORD RecvDataThread(void)
@@ -182,68 +174,3 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	WSACleanup();
 }
 
-//=============================================================================
-//=  Compute Internet Checksum for count bytes beginning at location addr     =
-//=============================================================================
-word16 checksum(byte *addr, word32 count)
-{
-	register word32 sum = 0;
-	//check if count is even, if not add 0x00
-	if (count % 2 != 0){
-
-	}
-	// Main summing loop
-	while (count > 1)
-	{
-		sum = sum + *((word16 *)addr)++;
-		count = count - 2;
-	}
-
-	// Add left-over byte, if any
-	if (count > 0)
-		sum = sum + *((byte *)addr);
-
-	// Fold 32-bit sum to 16 bits
-	while (sum >> 16)
-		sum = (sum & 0xFFFF) + (sum >> 16);
-
-	return(~sum);
-}
-
-#define POLY 0x8408
-/*
-//                                      16   12   5
-// this is the CCITT CRC 16 polynomial X  + X  + X  + 1.
-// This works out to be 0x1021, but the way the algorithm works
-// lets us use 0x8408 (the reverse of the bit pattern).  The high
-// bit is always assumed to be set, thus we only use 16 bits to
-// represent the 17 bit value.
-*/
-
-unsigned short crc16(char *data_p, unsigned short length)
-{
-	unsigned char i;
-	unsigned int data;
-	unsigned int crc = 0xffff;
-
-	if (length == 0)
-		return (~crc);
-
-	do
-	{
-		for (i = 0, data = (unsigned int)0xff & *data_p++;
-			i < 8;
-			i++, data >>= 1)
-		{
-			if ((crc & 0x0001) ^ (data & 0x0001))
-				crc = (crc >> 1) ^ POLY;
-			else  crc >>= 1;
-		}
-	} while (--length);
-
-	crc = ~crc;
-	data = crc;
-	crc = (crc << 8) | (data >> 8 & 0xff);
-
-	return (crc);
-}

@@ -10,7 +10,6 @@
 #include <tchar.h>
 
 #include "server.h"
-#include "utils.h"
 #include "SocketSendRecvTools.h"
 
 #define SEND_STR_SIZE 35
@@ -103,15 +102,12 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 
 	SOCKET AcceptSocketSender;
 	SOCKET AcceptSocketReceiver;
-	//printf("waiting for Receiver to connect\n");
 	AcceptSocketReceiver = accept(MainSocketReceiver, NULL, NULL);
 	if (AcceptSocketReceiver == INVALID_SOCKET)
 	{
 		printf("Accepting connection with client failed, error %ld\n", WSAGetLastError());
 		exit(1);
 	}
-	//printf("Receiver connected\n");
-	//printf("waiting for Sender to connect\n");
 	AcceptSocketSender = accept(MainSocketSender, NULL, NULL);
 	printf("receiver: %s\n", inet_ntoa(serviceReceiver.sin_addr));
 	printf("sender: %s\n", inet_ntoa(serviceSender.sin_addr));
@@ -120,11 +116,9 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Accepting connection with client failed, error %ld\n", WSAGetLastError());
 		exit(1);
 	}
-	//printf("Sender connected\n");
 	
 	TransferResult_t RecvRes;
 	char *acceptedStr = NULL;
-	//printf("waiting for message from Sender\n");
 	RecvRes = ReceiveString(&acceptedStr, AcceptSocketSender);
 	if (RecvRes == TRNS_FAILED)
 	{
@@ -136,12 +130,10 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 	//-------------------------FLIP BITS-------------------------------------
 
 	//-----------------------------------------------------------------------
-	//printf("Sending message to Receiver\n");
 	if (SendString(acceptedStr, AcceptSocketReceiver) == TRNS_FAILED)
 	{
 		printf("Service socket error while writing, closing thread.\n");
 	}
-	//printf("waiting for message from Receiver\n");
 	char* string_from_receiver = NULL;
 	RecvRes = ReceiveString(&string_from_receiver, AcceptSocketReceiver);
 	if (RecvRes == TRNS_FAILED)
@@ -149,7 +141,6 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Socket error while trying to write data to socket\n");
 		exit(1);
 	}
-	//printf("Sending message to Sender\n");
 	if (SendString(string_from_receiver, AcceptSocketSender) == TRNS_FAILED)
 	{
 		printf("Service socket error while writing, closing thread.\n");
