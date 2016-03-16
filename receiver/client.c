@@ -80,13 +80,17 @@ void 	write_content_message_to_file(char* fileName, char* message_content)
 	fclose(output_file);
 }
 
-char* get_submit_string(char* received_bytes,BOOL crc32_pass, BOOL crc16_pass,BOOL internet_checksum_pass)
+char* get_submit_string(int received_bytes,BOOL crc32_pass, BOOL crc16_pass,BOOL internet_checksum_pass)
 {
 	char temp_string[80];
-	char send_str[256];
-	printf("sending to Sender\n");
+	char* send_str = malloc(256 * sizeof(char));
+	if (send_str == NULL)
+	{
+		return send_str;
+	}
+	memset(send_str, '\0', sizeof(send_str));
 	strcpy(send_str, "recieved: ");
-	strcat(send_str, _itoa(received_bytes, temp_string, 10));
+	strcat(send_str, _itoa(received_bytes,temp_string,10));
 	strcat(send_str, " bytes \n");
 	strcat(send_str, "CRC-32: ");
 	if (crc32_pass)	{
@@ -117,7 +121,6 @@ char* get_submit_string(char* received_bytes,BOOL crc32_pass, BOOL crc16_pass,BO
 void MainClient(char* channelIp,char* fileName,int channelPort)
 {
 	SOCKADDR_IN clientService;
-	HANDLE hThread[2];
 	struct sockaddr_in foo;
 	int len = sizeof(struct sockaddr);
 	// Initialize Winsock.
@@ -151,14 +154,13 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	char *acceptedStr = NULL;
 
 
-	printf("waiting for message\n");
 	RecvRes = ReceiveString(&acceptedStr, m_socket);
-	//printf("message - %s\n", acceptedStr);
 
 	char* message_content = malloc((strlen(acceptedStr) - 8 * 2) * sizeof(char));
 	if (message_content == NULL)
 	{
 		printf("Error - malloc");
+		exit(1);
 	}
 	strncpy(message_content, acceptedStr, strlen(acceptedStr) - 9);
 	message_content[strlen(acceptedStr) - 16] = '\0';
@@ -169,6 +171,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	if (crc32code == NULL)
 	{
 		printf("Error - malloc");
+		exit(1);
 	}
 	strncpy(crc32code, acceptedStr + strlen(acceptedStr) - 16, 8);
 	crc32code[8] = '\0';
@@ -177,6 +180,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	if (crc16code == NULL)
 	{
 		printf("Error - malloc");
+		exit(1);
 	}
 	strncpy(crc16code, acceptedStr + strlen(acceptedStr) - 8, 4);
 	crc16code[4] = '\0';
@@ -185,28 +189,21 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	if (internet_checksum == NULL)
 	{
 		printf("Error - malloc");
+		exit(1);
 	}
 	strncpy(internet_checksum, acceptedStr + strlen(acceptedStr) - 4, 4);
 	internet_checksum[4] = '\0';
 
-	//printf("content - %s\n", message_content);
-	//printf("crc32 - %s\n", crc32code);
-	//printf("crc16 - %s\n", crc16code);
-	//printf("internet checksum - %s\n", internet_checksum);
 
 	//--------------------------------------CALCULATE CODES AND COMPARE---------------------------
 	uint32_t crc32code_calc = crc32a(message_content);
 	uint16_t crc16code_calc = gen_crc16(message_content, strlen(message_content));
 	uint16_t internet_checksum_calc = checksum(message_content, strlen(message_content));
 	BOOL crc32_pass, crc16_pass, internet_checksum_pass;
-	//printf("content		- %s\n", message_content);
-	//printf("checksum	= %04X\n", internet_checksum_calc);
-	//printf("crc16		= %04X\n", crc16code_calc);
-	//printf("crc32		= %08X\n", crc32code_calc);
-	char temp[4];
+	
+	char temp[32];
 	int received_bytes = strlen(acceptedStr);
-	printf("received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char)
-		);
+	printf("received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char));
 	//--------------------------------------CRC32----------------------------
 	printf("CRC-32: ");
 	if (crc32code_calc != (uint32_t)strtoul(crc32code, &temp, 16))	{
@@ -242,14 +239,19 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	shutdown(m_socket, SD_RECEIVE);
 	
 	char* send_str = get_submit_string(received_bytes, crc32_pass, crc16_pass, internet_checksum_pass);
-	printf("%s\n", send_str);
+	if (send_str == NULL)
+	{
+		printf("Error - malloc failed\n");
+		exit(1);
+	}
+	//printf("%s\n", send_str);
 
 	SendRes = SendString(send_str, m_socket);
 
 	if (SendRes == TRNS_FAILED)
 	{
 		printf("Socket error while trying to write data to socket\n");
-		return 0x555;
+		exit(1);
 	}
 	
 	

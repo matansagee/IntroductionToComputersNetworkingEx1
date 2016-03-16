@@ -40,7 +40,6 @@ typedef enum {
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
-void MainServer(int portNumberSender, int portNumberReceiver);
-void CloseSession(SOCKET sourceSocket);
+void MainServer(int portNumberSender, int portNumberReceiver, double probability, int random_seed);
 
 #endif // SERVER_H

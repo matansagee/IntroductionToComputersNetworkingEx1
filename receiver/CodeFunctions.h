@@ -17,7 +17,7 @@ typedef unsigned int       word32;  // 32-bit word is an int
 
 
 unsigned reverse(unsigned x);
-unsigned int crc32a(unsigned char *message);
+uint32_t crc32a(unsigned char *message);
 uint16_t gen_crc16(const uint8_t *data, uint16_t size);
 word16 checksum(byte *addr, word32 count);
 

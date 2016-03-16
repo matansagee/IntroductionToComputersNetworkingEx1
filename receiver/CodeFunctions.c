@@ -17,7 +17,7 @@ unsigned reverse(unsigned x) {
 /* This is the basic CRC algorithm with no optimizations. It follows the
 logic circuit as closely as possible. */
 
-unsigned int crc32a(unsigned char *message) {
+uint32_t crc32a(unsigned char *message) {
 	int i, j;
 	unsigned int byte, crc;
 

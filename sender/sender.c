@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "SocketSendRecvTools.h"
 #include "sender.h"
+#include "crc32.h"
 
 SOCKET m_socket;
 FILE *UsernameErrorsFile;
@@ -91,7 +92,6 @@ static DWORD SendDataThread(void)
 void MainClient(char* channelIp, FILE *file, int channelPort)
 {
 	SOCKADDR_IN clientService;
-	HANDLE hThread[2];
 	struct sockaddr_in foo;
 	int len = sizeof(struct sockaddr);
 	// Initialize Winsock.
@@ -116,10 +116,6 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR)
 	{
 		getsockname(m_socket, (struct sockaddr *) &foo, &len);
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-			inet_ntoa(foo.sin_addr), channelIp, channelPort, WSAGetLastError());
-		fprintf(UsernameErrorsFile, "%s failed to connect to %s:%d - error number %d\n",
-			inet_ntoa(foo.sin_addr), channelIp, channelPort, WSAGetLastError());
 		WSACleanup();
 		return;
 	}
@@ -127,12 +123,9 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	TransferResult_t SendRes;
 	TransferResult_t RecvRes;
 
-	char SendStr[256];
 	char *acceptedStr = NULL;
 	long input_file_size;
 	char *fileContents;
-	unsigned char* file_content_coded;
-	printf("sending to Receiver\n");
 	fseek(file, 0, SEEK_END);
 	input_file_size = ftell(file);
 	rewind(file);
@@ -141,128 +134,54 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	fileContents[input_file_size] = '\0';
 	fclose(file);
 	input_file_size = strlen(fileContents);
-	printf("file content - %s\n", fileContents);
+
 	// Compute the 16-bit checksum
-	//**********need to add a 0x00 byte at end if # of bytes isnt even
 	uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
-
-	// Output the checksum
-	printf("checksum = %04X\n", internet_checksum);
-
 	uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
-	printf("crc16 = %04X\n", crc16code);
-
 	uint32_t crc32code = crc32a((char*)fileContents);
 
-	printf("crc32 = %08X\n", crc32code);
-
-	char* coded_file_content = malloc((strlen(fileContents) + 9) * sizeof(char));
+	char* coded_file_content = malloc((strlen(fileContents) + 17) * sizeof(char));
 	if (coded_file_content == NULL)
 	{
 		printf("Error - malloc\n");
-		return 1;
+		exit(1);
 	}
-	char temp[80];
+	
 	strcpy(coded_file_content, fileContents);
-	printf("%s\n", coded_file_content);
-	char crc32char[4];
-	char crc16char[2];
-	char internet_checksum_char[2];
+	char crc32char[32];
+	char crc16char[32];
+	char internet_checksum_char[32];
 
 	_itoa(crc32code, crc32char, 16);
 	_itoa(crc16code, crc16char, 16);
 	_itoa(internet_checksum, internet_checksum_char, 16);
-
 	strcat(coded_file_content, crc32char);
-	printf("%s\n", coded_file_content);
 	strcat(coded_file_content, crc16char);
-	printf("%s\n", coded_file_content);
 	strcat(coded_file_content, internet_checksum_char);
-	printf("%s\n", coded_file_content);
 	coded_file_content[strlen(coded_file_content)] = '\0';
-	printf("%s\n", coded_file_content);
 
 	SendRes = SendString(coded_file_content, m_socket);
-	printf("size %d\n", strlen(coded_file_content));
+	shutdown(m_socket, SD_SEND);
+
 	if (SendRes == TRNS_FAILED)
 	{
 		printf("Socket error while trying to write data to socket\n");
-		return 0x555;
+		exit(1);
 	}
 
-	printf("waiting for message\n");
 	RecvRes = ReceiveString(&acceptedStr, m_socket);
-	printf("message - %s\n", acceptedStr);
+	if (RecvRes == TRNS_FAILED)
+	{
+		printf("Socket error while trying to recv data to socket\n");
+		exit(1);
+	}
+
+	printf("%s\n", acceptedStr);
 	free(acceptedStr);
-
-
-
-
 	closesocket(m_socket);
 	WSACleanup();
-
-	return;
-}
-char* calc_crc32(char* fileContents)
-{
-	return "a";
 }
 
-char* calc_crc16(char* fileContents)
-{
-	return "a";
-}
-char* calc_internet_checksum(char* fileContents)
-{
-	return "ds";
-}
-
-/*
-**************************************************************************
-Function: tcp_sum_calc()
-**************************************************************************
-Description:
-Calculate TCP checksum
-***************************************************************************
-Copy from http://www.netfor2.com/tcpsum.htm
-*/
-
-
-//word16 tcp_sum_calc(word16 len_tcp, BOOL padding, word16 buff[])
-//{
-//	word16 prot_tcp = 6;
-//	word16 padd = 0;
-//	word16 word16;
-//	long sum;
-//	int i;
-//
-//	// Find out if the length of data is even or odd number. If odd,
-//	// add a padding byte = 0 at the end of packet
-//	if (padding & 1 == 1){
-//		padd = 1;
-//		buff[len_tcp] = 0;
-//	}
-//
-//	//initialize sum to zero
-//	sum = 0;
-//
-//	// make 16 bit words out of every two adjacent 8 bit words and 
-//	// calculate the sum of all 16 vit words
-//	for (i = 0; i<len_tcp + padd; i = i + 2){
-//		word16 = ((buff[i] << 8) & 0xFF00) + (buff[i + 1] & 0xFF);
-//		sum = sum + (unsigned long)word16;
-//	}
-//	
-//	// keep only the last 16 bits of the 32 bit calculated sum and add the carries
-//	while (sum >> 16)
-//		sum = (sum & 0xFFFF) + (sum >> 16);
-//
-//	// Take the one's complement of sum
-//	sum = ~sum;
-//
-//	return ((unsigned short)sum);
-//}
-//
 //=============================================================================
 //=  Compute Internet Checksum for count bytes beginning at location addr     =
 //=============================================================================
