@@ -13,11 +13,14 @@
 #include "SocketSendRecvTools.h"
 
 #define SEND_STR_SIZE 35
+#define ECC_BLOCK_LENGTH 16
 FILE *ServerLog;
 
 SOCKET MainSocketSender;
 SOCKET MainSocketReceiver;
 
+void establishConnection(SOCKET *MainSocket, SOCKADDR_IN *service, int portNumber);
+void PrintBitsOfChar(char c);
 
 //***************************************************************
 // Main Server - open file, open socket, accept conections and
@@ -60,7 +63,10 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Error at socket( ): %ld\n", WSAGetLastError());
 		exit(1);
 	}
-
+	//-------------------------------ESTABLISH CONNECTION---------------------------------
+	establishConnection(&MainSocketSender, &serviceSender, portNumberSender);
+	establishConnection(&MainSocketReceiver, &serviceReceiver, portNumberReceiver);
+	/*
 	serviceSender.sin_family = AF_INET;
 	serviceSender.sin_addr.s_addr = INADDR_ANY;
 	serviceSender.sin_port = htons(portNumberSender); //The htons function converts a u_short from host to TCP/IP network byte order 
@@ -99,6 +105,7 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Failed listening on socket, error %ld.\n", WSAGetLastError());
 		exit(1);
 	}
+	*/
 
 	SOCKET AcceptSocketSender;
 	SOCKET AcceptSocketReceiver;
@@ -108,17 +115,20 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Accepting connection with client failed, error %ld\n", WSAGetLastError());
 		exit(1);
 	}
-	AcceptSocketSender = accept(MainSocketSender, NULL, NULL);
 	printf("receiver: %s\n", inet_ntoa(serviceReceiver.sin_addr));
-	printf("sender: %s\n", inet_ntoa(serviceSender.sin_addr));
+
+	AcceptSocketSender = accept(MainSocketSender, NULL, NULL);
 	if (AcceptSocketSender == INVALID_SOCKET)
 	{
 		printf("Accepting connection with client failed, error %ld\n", WSAGetLastError());
 		exit(1);
 	}
-	
+	printf("sender: %s\n", inet_ntoa(serviceSender.sin_addr));
+	//-------------------------------END OF ESTABLISHING CONNECTION-------------------------
+	//---------------------------------------GET DATA---------------------------------------
 	TransferResult_t RecvRes;
 	char *acceptedStr = NULL;
+	//get string from sender
 	RecvRes = ReceiveString(&acceptedStr, AcceptSocketSender);
 	if (RecvRes == TRNS_FAILED)
 	{
@@ -126,14 +136,32 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		exit(1);
 	}
 	//closing the sender socket to receive
-	shutdown(AcceptSocketSender, SD_RECEIVE);
-	//-------------------------FLIP BITS-------------------------------------
+	if (shutdown(AcceptSocketSender, SD_RECEIVE == SOCKET_ERROR)){
+		printf("Socket error while trying to shutdown socket\n");
+		exit(1);
+	}
+	printf("%d bytes ", strlen(acceptedStr) - ECC_BLOCK_LENGTH);
 
+	//-------------------------FLIP BITS-------------------------------------
+	int num_bits_flipped = 0;
+	for (int i = 0; i < strlen(acceptedStr) - ECC_BLOCK_LENGTH; i++){
+		for (int j = 0; j < 8; j++){
+			if (probability == rand() * 2 + 2){//assuming RAND_MAX = 32767
+				acceptedStr[i] ^= 1 << j;//toggle the bit
+				num_bits_flipped++;
+			}
+			
+		}
+	}
+	printf("flipped %d bits\n", num_bits_flipped);
 	//-----------------------------------------------------------------------
+	//send string to receiver
 	if (SendString(acceptedStr, AcceptSocketReceiver) == TRNS_FAILED)
 	{
 		printf("Service socket error while writing, closing thread.\n");
 	}
+
+	//get string from receiver
 	char* string_from_receiver = NULL;
 	RecvRes = ReceiveString(&string_from_receiver, AcceptSocketReceiver);
 	if (RecvRes == TRNS_FAILED)
@@ -141,18 +169,58 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 		printf("Socket error while trying to write data to socket\n");
 		exit(1);
 	}
+	//close receiver socket
+	if (closesocket(AcceptSocketReceiver) == SOCKET_ERROR){
+		printf("Socket error while trying to close socket\n");
+		exit(1);
+	}
+	//send string to sender
 	if (SendString(string_from_receiver, AcceptSocketSender) == TRNS_FAILED)
 	{
 		printf("Service socket error while writing, closing thread.\n");
+	}
+	//close sender socket
+	if (closesocket(AcceptSocketSender) == SOCKET_ERROR){
+		printf("Socket error while trying to close socket\n");
+		exit(1);
 	}
 
 
 	free(acceptedStr);
 	free(string_from_receiver);
-	closesocket(AcceptSocketReceiver);
-	closesocket(AcceptSocketSender);
-	closesocket(MainSocketReceiver);
 	WSACleanup();
+}
+
+void establishConnection(SOCKET *MainSocket, SOCKADDR_IN *service, int portNumber){
+	service->sin_family = AF_INET;
+	service->sin_addr.s_addr = INADDR_ANY;
+	service->sin_port = htons(portNumber); //The htons function converts a u_short from host to TCP/IP network byte order 
+
+	int bindRes;
+	bindRes = bind(*MainSocket, (SOCKADDR*)service, sizeof(*service));
+
+	if (bindRes == SOCKET_ERROR)
+	{
+		printf("bind( ) failed with error %ld. Ending program\n", WSAGetLastError());
+		exit(1);
+	}
+
+	int ListenRes;
+	ListenRes = listen(*MainSocket, SOMAXCONN);
+	if (ListenRes == SOCKET_ERROR)
+	{
+		printf("Failed listening on socket, error %ld.\n", WSAGetLastError());
+		exit(1);
+	}
+
+}
+
+void PrintBitsOfChar(char c){
+	for (int i = 7; i >= 0; i--){
+		char bit = (c >> i) & 1;
+		printf("%d", bit);
+	}
+	printf("\n");
 }
 
 //*****************************************************

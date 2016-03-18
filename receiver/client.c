@@ -194,7 +194,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	internet_checksum[4] = '\0';
 
 
-	//--------------------------------------CALCULATE CODES AND COMPARE---------------------------
+	//------------------------------CALCULATE CODES AND COMPARE---------------------------
 	uint32_t crc32code_calc = crc32a(message_content);
 	uint16_t crc16code_calc = gen_crc16(message_content, strlen(message_content));
 	uint16_t internet_checksum_calc = checksum(message_content, strlen(message_content));
@@ -203,7 +203,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	char temp[32];
 	int received_bytes = strlen(acceptedStr);
 	printf("received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char));
-	//--------------------------------------CRC32----------------------------
+	//--------------------------------------CRC32-------------------------------
 	printf("CRC-32: ");
 	if (crc32code_calc != (uint32_t)strtoul(crc32code, &temp, 16))	{
 		printf("FAIL. "); 
@@ -213,7 +213,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 		crc32_pass = TRUE;
 	}
 	printf("Computed 0x%04x, received 0x%s\n", crc32code_calc, crc32code);
-	//--------------------------------------CRC16------------------------------
+	//--------------------------------------CRC16-------------------------------
 	printf("CRC-16: ");
 	if (crc16code_calc != (uint16_t)strtoul(crc16code, &temp, 16))	{
 		printf("FAIL. ");
@@ -223,7 +223,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 		crc16_pass = TRUE;
 	}
 	printf("Computed 0x%04x, received 0x%s\n", crc16code_calc, crc16code);
-	//---------------------------------INTERNET CHECKSUM------------------
+	//---------------------------------INTERNET CHECKSUM------------------------
 	printf("Inet-cksum: ");
 	if (internet_checksum_calc != strtoul(internet_checksum, &temp, 16))	{
 		printf("FAIL. ");

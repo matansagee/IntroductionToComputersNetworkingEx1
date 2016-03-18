@@ -20,10 +20,10 @@ SOCKET m_socket;
 FILE *UsernameErrorsFile;
 FILE *UsernameLogFile;
 
-char* calc_crc32(char* fileContents);
+/*char* calc_crc32(char* fileContents);
 char* calc_crc16(char* fileContents);
 char* calc_internet_checksum(char* fileContents);
-
+*/
 
 //Reading data coming from the server
 static DWORD RecvDataThread(void)
@@ -127,7 +127,7 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	fclose(file);
 	input_file_size = strlen(fileContents);
 
-	// Compute the 16-bit checksum
+	// Compute the ECC's
 	uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
 	uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
 	uint32_t crc32code = crc32a((char*)fileContents);
