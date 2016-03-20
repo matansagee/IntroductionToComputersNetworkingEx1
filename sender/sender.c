@@ -17,65 +17,6 @@
 #include "code_functions.h"
 
 SOCKET m_socket;
-FILE *UsernameErrorsFile;
-FILE *UsernameLogFile;
-
-/*char* calc_crc32(char* fileContents);
-char* calc_crc16(char* fileContents);
-char* calc_internet_checksum(char* fileContents);
-*/
-
-//Reading data coming from the server
-static DWORD RecvDataThread(void)
-{
-	TransferResult_t RecvRes;
-
-	while (1)
-	{
-		char *acceptedStr = NULL;
-		RecvRes = ReceiveString(&acceptedStr, m_socket);
-
-		if (RecvRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			return 0x555;
-		}
-		else if (RecvRes == TRNS_DISCONNECTED)
-		{
-			printf("Server closed connection. Bye!\n");
-			return 0x555;
-		}
-		else
-		{
-			fprintf(UsernameLogFile, "RECEIVED:: %s\n", acceptedStr);
-			printf("%s\n", acceptedStr);
-		}
-
-		free(acceptedStr);
-	}
-
-	return 0;
-}
-
-//Sending data to the server
-static DWORD SendDataThread(void)
-{
-	char SendStr[256];
-	TransferResult_t SendRes;
-
-	while (1)
-	{
-		gets(SendStr); //Reading a string from the keyboard
-
-		SendRes = SendString(SendStr, m_socket);
-		fprintf(UsernameLogFile, "SENT:: %s\n", SendStr);
-		if (SendRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			return 0x555;
-		}
-	}
-}
 
 //********************************************************************
 // MainClient - open a socket, ask for connection ,and manage data 
@@ -90,14 +31,14 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	WSADATA wsaData; //Create a WSADATA object called wsaData.
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR)
-		printf("Error at WSAStartup()\n");
+		fprintf(stderr,"Error at WSAStartup()\n");
 
 	// Create a socket.
 	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	// Check for errors to ensure that the socket is a valid socket.
 	if (m_socket == INVALID_SOCKET) {
-		printf("Error at socket(): %ld\n", WSAGetLastError());
+		fprintf(stderr,"Error at socket(): %ld\n", WSAGetLastError());
 		WSACleanup();
 		return;
 	}
@@ -135,7 +76,7 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	char* coded_file_content = malloc((strlen(fileContents) + 17) * sizeof(char));
 	if (coded_file_content == NULL)
 	{
-		printf("Error - malloc\n");
+		fprintf(stderr,"Error - malloc\n");
 		exit(1);
 	}
 	
@@ -157,18 +98,18 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 
 	if (SendRes == TRNS_FAILED)
 	{
-		printf("Socket error while trying to write data to socket\n");
+		fprintf(stderr,"Socket error while trying to write data to socket\n");
 		exit(1);
 	}
 
 	RecvRes = ReceiveString(&acceptedStr, m_socket);
 	if (RecvRes == TRNS_FAILED)
 	{
-		printf("Socket error while trying to recv data to socket\n");
+		fprintf(stderr,"Socket error while trying to recv data to socket\n");
 		exit(1);
 	}
 
-	printf("%s\n", acceptedStr);
+	fprintf(stderr,"%s\n", acceptedStr);
 	free(acceptedStr);
 	closesocket(m_socket);
 	WSACleanup();

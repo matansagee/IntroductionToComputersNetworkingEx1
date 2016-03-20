@@ -13,28 +13,28 @@ int main(int argc, char** argv)
 
 	if (argc < 4)
 	{
-		printf("ERROR - Not enough arguments\n");
+		fprintf(stderr,"ERROR - Not enough arguments\n");
 		return 1;
 	}
 	channelPort = atoi(argv[2]);
 	channelIp = (char*)malloc(strlen(argv[1])*sizeof(char));
 	if (channelIp == NULL)
 	{
-		printf("ERROR - Malloc failed \n");
+		fprintf(stderr,"ERROR - Malloc failed \n");
 		return 1;
 	}
 	strcpy(channelIp, argv[1]);
 	fileName = (char*)malloc(strlen(argv[3])*sizeof(char));
 	if (fileName == NULL)
 	{
-		printf("ERROR - Malloc failed \n");
+		fprintf(stderr,"ERROR - Malloc failed \n");
 		return 1;
 	}
 	strcpy(fileName, argv[3]);
 	FILE* file = fopen(fileName, "rb");
 	if (file == NULL)
 	{
-		printf("ERROR - open file %s failed\n",fileName);
+		fprintf(stderr,"ERROR - open file %s failed\n",fileName);
 		return 1;
 	}
 

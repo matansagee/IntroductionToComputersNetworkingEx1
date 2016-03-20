@@ -11,12 +11,12 @@ unsigned reverse(unsigned x) {
 		((x >> 8) & 0xFF00) | (x >> 24);
 	return x;
 }
+
+
 //Credit is due to hackersdelight.org
 // ----------------------------- crc32a --------------------------------
-
 /* This is the basic CRC algorithm with no optimizations. It follows the
 logic circuit as closely as possible. */
-
 uint32_t crc32a(unsigned char *message) {
 	int i, j;
 	unsigned int byte, crc;
