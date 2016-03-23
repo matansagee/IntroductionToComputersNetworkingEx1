@@ -40,7 +40,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="hello.txt">
+    <Text Include="input.txt">
       <Filter>Resource Files</Filter>
     </Text>
   </ItemGroup>
