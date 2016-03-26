@@ -105,45 +105,48 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 
 	RecvRes = ReceiveString(&acceptedStr, m_socket);
 
-	char* message_content = malloc((strlen(acceptedStr) - 8 * 2) * sizeof(char));
+	char* message_content = malloc(strlen(acceptedStr)*sizeof(char) - 8 + 1);
 	if (message_content == NULL)
 	{
 		fprintf(stderr,"Error - malloc");
 		exit(1);
 	}
-	strncpy(message_content, acceptedStr, strlen(acceptedStr) - 9);
-	message_content[strlen(acceptedStr) - 16] = '\0';
+	strncpy(message_content, acceptedStr, strlen(acceptedStr) - 8);
+	message_content[strlen(acceptedStr) - 8] = '\0';
 	
 	write_content_message_to_file(fileName, message_content);
 
-	char* crc32code = malloc(8 * sizeof(char));
+	char* crc32code = malloc(5 * sizeof(char));
 	if (crc32code == NULL)
 	{
 		fprintf(stderr,"Error - malloc");
 		exit(1);
 	}
-	strncpy(crc32code, acceptedStr + strlen(acceptedStr) - 16, 8);
-	crc32code[8] = '\0';
+	strncpy(crc32code, acceptedStr + strlen(acceptedStr) - 8, 4);
+	crc32code[4] = '\0';
 
-	char* crc16code = malloc(4 * sizeof(char));
+	char* crc16code = malloc(3 * sizeof(char));
 	if (crc16code == NULL)
 	{
 		fprintf(stderr,"Error - malloc");
 		exit(1);
 	}
-	strncpy(crc16code, acceptedStr + strlen(acceptedStr) - 8, 4);
-	crc16code[4] = '\0';
+	strncpy(crc16code, acceptedStr + strlen(acceptedStr) - 4, 2);
+	crc16code[2] = '\0';
 
-	char* internet_checksum = malloc(4 * sizeof(char));
+	char* internet_checksum = malloc(3 * sizeof(char));
 	if (internet_checksum == NULL)
 	{
 		fprintf(stderr,"Error - malloc");
 		exit(1);
 	}
-	strncpy(internet_checksum, acceptedStr + strlen(acceptedStr) - 4, 4);
-	internet_checksum[4] = '\0';
+	strncpy(internet_checksum, acceptedStr + strlen(acceptedStr) - 2, 2);
+	internet_checksum[2] = '\0';
 
-
+	uint16_t crc16code_int = (uint16_t)(crc16code[1]) << 8 | (uint16_t)crc16code[0];
+	uint16_t internet_checksum_int = (uint16_t)(internet_checksum[1]) << 8 | ((uint16_t)internet_checksum[0] & 0xff);
+	uint32_t crc32code_int = ((uint32_t)(crc32code[3]) << 24) | ((uint32_t)(crc32code[2]) << 16 & 0xffffffff)
+		| ((uint32_t)(crc32code[1]) << 8 & 0xffff) | ((uint32_t)crc32code[0] & 0xff);
 	//------------------------------CALCULATE CODES AND COMPARE---------------------------
 	uint32_t crc32code_calc = crc32a(message_content);
 	uint16_t crc16code_calc = gen_crc16(message_content, strlen(message_content));
@@ -155,34 +158,34 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	fprintf(stderr,"received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char));
 	//--------------------------------------CRC32-------------------------------
 	fprintf(stderr,"CRC-32: ");
-	if (crc32code_calc != (uint32_t)strtoul(crc32code, &temp, 16))	{
+	if (crc32code_calc != crc32code_int)	{
 		fprintf(stderr,"FAIL. "); 
 		crc32_pass = FALSE;
 	}	else 	{
 		fprintf(stderr, "pass. ");
 		crc32_pass = TRUE;
 	}
-	fprintf(stderr,"Computed 0x%04x, received 0x%s\n", crc32code_calc, crc32code);
+	fprintf(stderr,"Computed 0x%04x, received 0x%0x\n", crc32code_calc, crc32code_int);
 	//--------------------------------------CRC16-------------------------------
 	fprintf(stderr,"CRC-16: ");
-	if (crc16code_calc != (uint16_t)strtoul(crc16code, &temp, 16))	{
+	if (crc16code_calc != crc16code_int)	{
 		fprintf(stderr,"FAIL. ");
 		crc16_pass = FALSE;
 	}	else	{
 		fprintf(stderr,"pass. ");
 		crc16_pass = TRUE;
 	}
-	fprintf(stderr,"Computed 0x%04x, received 0x%s\n", crc16code_calc, crc16code);
+	fprintf(stderr,"Computed 0x%04x, received 0x%0x\n", crc16code_calc, crc16code_int);
 	//---------------------------------INTERNET CHECKSUM------------------------
 	fprintf(stderr,"Inet-cksum: ");
-	if (internet_checksum_calc != strtoul(internet_checksum, &temp, 16))	{
+	if (internet_checksum_calc != internet_checksum_int)	{
 		fprintf(stderr,"FAIL. ");
 		internet_checksum_pass = FALSE;
 	}	else	{
 		fprintf(stderr,"pass. ");
 		internet_checksum_pass = TRUE;
 	}
-	fprintf(stderr,"Computed 0x%04x, received 0x%s\n", internet_checksum_calc, internet_checksum);
+	fprintf(stderr,"Computed 0x%04x, received 0x%0x\n", internet_checksum_calc, internet_checksum_int);
 	//-----------------------------------------------------------------------------------
 
 	shutdown(m_socket, SD_RECEIVE);

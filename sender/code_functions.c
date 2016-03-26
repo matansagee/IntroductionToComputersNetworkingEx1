@@ -95,10 +95,6 @@ uint16_t gen_crc16(const uint8_t *data, uint16_t size)
 uint16_t checksum(byte *addr, word32 count)
 {
 	register word32 sum = 0;
-	//check if count is even, if not add 0x00
-	if (count % 2 != 0){
-
-	}
 	// Main summing loop
 	while (count > 1)
 	{

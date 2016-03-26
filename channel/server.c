@@ -13,7 +13,7 @@
 #include "SocketSendRecvTools.h"
 
 #define SEND_STR_SIZE 35
-#define ECC_BLOCK_LENGTH 16
+#define ECC_BLOCK_LENGTH 8 //bytes
 FILE *ServerLog;
 
 SOCKET MainSocketSender;
@@ -99,7 +99,7 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 
 	//-------------------------FLIP BITS-------------------------------------
 	int num_bits_flipped = 0;
-	for (unsigned int i = 0; i < strlen(acceptedStr) - ECC_BLOCK_LENGTH; i++){
+	for (unsigned int i = 0; i < strlen(acceptedStr); i++){
 		for (unsigned int j = 0; j < 8; j++){
 			if (probability > rand() * 2 + 2){//assuming RAND_MAX = 32767
 				acceptedStr[i] ^= 1 << j;//toggle the bit

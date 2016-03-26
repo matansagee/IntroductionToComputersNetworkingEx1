@@ -72,8 +72,18 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	uint16_t internet_checksum = checksum(fileContents, strlen(fileContents));
 	uint16_t crc16code = gen_crc16(fileContents, strlen(fileContents));
 	uint32_t crc32code = crc32a((char*)fileContents);
+	char lo_16 = crc16code & 0xFF;
+	char hi_16 = crc16code >> 8;
 
-	char* coded_file_content = malloc((strlen(fileContents) + 17) * sizeof(char));
+	char lo_checksum = internet_checksum & 0xFF;
+	char hi_checksum = internet_checksum >> 8;
+
+	char lolo_crc32 = crc32code & 0xFF;
+	char lohi_crc32 = crc32code >> 8 & 0xFF;
+	char hilo_crc32 = crc32code >> 16 & 0xFF;
+	char hihi_crc32 = crc32code >> 24;
+
+	char* coded_file_content = malloc((strlen(fileContents)) * sizeof(char) + 9);
 	if (coded_file_content == NULL)
 	{
 		fprintf(stderr,"Error - malloc\n");
@@ -81,16 +91,27 @@ void MainClient(char* channelIp, FILE *file, int channelPort)
 	}
 	
 	strcpy(coded_file_content, fileContents);
-	char crc32char[32];
-	char crc16char[32];
-	char internet_checksum_char[32];
+	char crc32char[4] = { lolo_crc32, lohi_crc32, hilo_crc32, hihi_crc32 };
+	char crc16char[2] = { lo_16, hi_16 };
+	char internet_checksum_char[2] = { lo_checksum, hi_checksum };
+	//char internet_checksum_char[2] = { hi_checksum, lo_checksum };
 
-	_itoa(crc32code, crc32char, 16);
+	/*strncat(coded_file_content, hihi_crc32,);
+	strncat(coded_file_content, hilo_crc32);
+	strncat(coded_file_content, lohi_crc32);
+	strncat(coded_file_content, lolo_crc32);
+	strncat(coded_file_content, hi_16);
+	strncat(coded_file_content, lo_16);
+	strncat(coded_file_content, hi_checksum);
+	strncat(coded_file_content, lo_checksum);
+	*/
+	/*_itoa(crc32code, crc32char, 16);
 	_itoa(crc16code, crc16char, 16);
 	_itoa(internet_checksum, internet_checksum_char, 16);
-	strcat(coded_file_content, crc32char);
-	strcat(coded_file_content, crc16char);
-	strcat(coded_file_content, internet_checksum_char);
+	*/
+	strncat(coded_file_content, crc32char,4);
+	strncat(coded_file_content, crc16char,2);
+	strncat(coded_file_content, internet_checksum_char,2);
 	coded_file_content[strlen(coded_file_content)] = '\0';
 
 	SendRes = SendString(coded_file_content, m_socket);
