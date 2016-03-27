@@ -145,7 +145,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	//convert the codes to uint16_t and uint32_t
 	uint16_t crc16code_int = (uint16_t)(crc16code[1]) << 8 | (uint16_t)crc16code[0] & 0xff;
 	uint16_t internet_checksum_int = (uint16_t)(internet_checksum[1]) << 8 | ((uint16_t)internet_checksum[0] & 0xff);
-	uint32_t crc32code_int = ((uint32_t)(crc32code[3]) << 24) | ((uint32_t)(crc32code[2]) << 16 & 0xffffffff)
+	uint32_t crc32code_int = ((uint32_t)(crc32code[3]) << 24) | ((uint32_t)(crc32code[2]) << 16 & 0xffffff)
 		| ((uint32_t)(crc32code[1]) << 8 & 0xffff) | ((uint32_t)crc32code[0] & 0xff);
 	//------------------------------CALCULATE CODES AND COMPARE---------------------------
 	uint32_t crc32code_calc = crc32a(message_content);
