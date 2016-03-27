@@ -99,10 +99,11 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 
 	//-------------------------FLIP BITS-------------------------------------
 	int num_bits_flipped = 0;
+	srand(random_seed);
 	for (unsigned int i = 0; i < strlen(acceptedStr); i++){
 		for (unsigned int j = 0; j < 8; j++){
-			int randa = rand(random_seed);
-			int randb = rand(random_seed);
+			int randa = rand();
+			int randb = rand();
 			if (probability > (randa + randb)){//assuming RAND_MAX = 32767
 				acceptedStr[i] ^= 1 << j;//toggle the bit
 				num_bits_flipped++;

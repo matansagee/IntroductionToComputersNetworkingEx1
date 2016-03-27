@@ -153,7 +153,6 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	uint16_t internet_checksum_calc = checksum(message_content, strlen(message_content));
 	BOOL crc32_pass, crc16_pass, internet_checksum_pass;
 	
-	char* temp;
 	int received_bytes = strlen(acceptedStr);
 	fprintf(stderr,"received: %d bytes written: %d bytes\n", received_bytes, strlen(message_content)*sizeof(char));
 	//--------------------------------------CRC32-------------------------------
