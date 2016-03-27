@@ -104,7 +104,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 
 
 	RecvRes = ReceiveString(&acceptedStr, m_socket);
-
+	//get the message content
 	char* message_content = malloc(strlen(acceptedStr)*sizeof(char) - 8 + 1);
 	if (message_content == NULL)
 	{
@@ -115,7 +115,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	message_content[strlen(acceptedStr) - 8] = '\0';
 	
 	write_content_message_to_file(fileName, message_content);
-
+	//get the crc32 code
 	char* crc32code = malloc(5 * sizeof(char));
 	if (crc32code == NULL)
 	{
@@ -124,7 +124,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	}
 	strncpy(crc32code, acceptedStr + strlen(acceptedStr) - 8, 4);
 	crc32code[4] = '\0';
-
+	//get the crc16code
 	char* crc16code = malloc(3 * sizeof(char));
 	if (crc16code == NULL)
 	{
@@ -133,7 +133,7 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	}
 	strncpy(crc16code, acceptedStr + strlen(acceptedStr) - 4, 2);
 	crc16code[2] = '\0';
-
+	//get the internet checksum code
 	char* internet_checksum = malloc(3 * sizeof(char));
 	if (internet_checksum == NULL)
 	{
@@ -142,8 +142,8 @@ void MainClient(char* channelIp,char* fileName,int channelPort)
 	}
 	strncpy(internet_checksum, acceptedStr + strlen(acceptedStr) - 2, 2);
 	internet_checksum[2] = '\0';
-
-	uint16_t crc16code_int = (uint16_t)(crc16code[1]) << 8 | (uint16_t)crc16code[0];
+	//convert the codes to uint16_t and uint32_t
+	uint16_t crc16code_int = (uint16_t)(crc16code[1]) << 8 | (uint16_t)crc16code[0] & 0xff;
 	uint16_t internet_checksum_int = (uint16_t)(internet_checksum[1]) << 8 | ((uint16_t)internet_checksum[0] & 0xff);
 	uint32_t crc32code_int = ((uint32_t)(crc32code[3]) << 24) | ((uint32_t)(crc32code[2]) << 16 & 0xffffffff)
 		| ((uint32_t)(crc32code[1]) << 8 & 0xffff) | ((uint32_t)crc32code[0] & 0xff);
