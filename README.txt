@@ -7,3 +7,19 @@ Order of exectuable
 my_channel
 my_receiver
 my_sender
+
+Files Content
+
+channel\main.c - handling the input arguments and calling main function
+channel\server.c - main fucntion that handle the channel functionality
+channel\SocketSendRecvTools.c - handling sending and receiving data from sockets
+
+receiver\main.c - handling the input arguments and calling main function
+receiver\client.c - main fucntion that handle the channel functioality
+receiver\code_functions.c - contain the ecc calculations
+receiver\SocketSendRecvTools.c - handling sending and receiving data from sockets
+
+sender\main.c - handling the input arguments and calling main function
+sender\sender.c - main fucntion that handle the channel functioality
+sender\code_functions.c - contain the ecc calculations
+sender\SocketSendRecvTools.c - handling sending and receiving data from sockets
