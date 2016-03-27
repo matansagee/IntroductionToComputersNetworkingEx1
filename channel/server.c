@@ -101,7 +101,9 @@ void MainServer(int portNumberSender, int portNumberReceiver, double probability
 	int num_bits_flipped = 0;
 	for (unsigned int i = 0; i < strlen(acceptedStr); i++){
 		for (unsigned int j = 0; j < 8; j++){
-			if (probability > rand() * 2 + 2){//assuming RAND_MAX = 32767
+			int randa = rand(random_seed);
+			int randb = rand(random_seed);
+			if (probability > (randa + randb)){//assuming RAND_MAX = 32767
 				acceptedStr[i] ^= 1 << j;//toggle the bit
 				num_bits_flipped++;
 			}
